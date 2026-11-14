@@ -5,6 +5,8 @@ const floorLabel = document.getElementById('record-floor');
 const savedTime = document.getElementById('record-time');
 const locationRow = document.getElementById('location-row');
 const locationStatus = document.getElementById('location-status');
+const mapLinks = document.getElementById('map-links');
+const naverMapLink = document.getElementById('naver-map-link');
 const mapLink = document.getElementById('map-link');
 const retryButton = document.getElementById('retry-location');
 const floorButtons = [...document.querySelectorAll('[data-floor]')];
@@ -26,6 +28,26 @@ function showSaveError() {
   notice.textContent = '이 브라우저에 기록을 저장할 수 없어요. 사이트 저장 설정을 확인해 주세요.';
 }
 
+function naverMapUrl({ latitude, longitude }, floor) {
+  const android = /Android/i.test(navigator.userAgent);
+  if (!android && !/iPhone|iPad|iPod/i.test(navigator.userAgent)) return '';
+  if (latitude < 31.43 || latitude > 44.35 || longitude < 122.37 || longitude > 132) return '';
+
+  const params = new URLSearchParams({
+    lat: latitude,
+    lng: longitude,
+    name: '주차 위치 ' + floor,
+    appname: new URL('./', window.location.href).href
+  });
+  const place = 'place?' + params.toString().replaceAll('+', '%20');
+  if (!android) return 'nmap://' + place;
+
+  const storeUrl = 'https://play.google.com/store/apps/details?id=com.nhn.android.nmap';
+  return 'intent://' + place + '#Intent;scheme=nmap;action=android.intent.action.VIEW;' +
+    'category=android.intent.category.BROWSABLE;package=com.nhn.android.nmap;' +
+    'S.browser_fallback_url=' + encodeURIComponent(storeUrl) + ';end';
+}
+
 function displayRecord(record, locating = false, locationError = '') {
   floorLabel.textContent = record?.floor ?? '아직 기록이 없어요';
   floorLabel.classList.toggle('empty', !record);
@@ -42,18 +64,23 @@ function displayRecord(record, locating = false, locationError = '') {
   savedTime.textContent = dateFormat.format(date);
 
   const location = record.location;
-  mapLink.hidden = !location;
+  mapLinks.hidden = !location;
   retryButton.hidden = locating || Boolean(location);
   if (location) {
     const url = new URL('https://www.google.com/maps/search/');
     url.searchParams.set('api', '1');
     url.searchParams.set('query', [location.latitude, location.longitude].join(','));
     mapLink.href = url.href;
+    const naverUrl = naverMapUrl(location, record.floor);
+    naverMapLink.hidden = !naverUrl;
+    if (naverUrl) naverMapLink.href = naverUrl;
+    else naverMapLink.removeAttribute('href');
     locationStatus.textContent = 'GPS 정확도 약 ' + Math.round(location.accuracy) + 'm';
     return;
   }
 
   mapLink.removeAttribute('href');
+  naverMapLink.removeAttribute('href');
   locationStatus.textContent = locating
     ? 'GPS 위치 확인 중…'
     : locationError || 'GPS 위치 없음';

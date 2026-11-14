@@ -1,8 +1,8 @@
 'use strict';
 
 const CACHE_PREFIX = 'parking-shell:' + self.registration.scope + ':';
-const CACHE_NAME = CACHE_PREFIX + 'v1';
-const FILES = ['./', './parking.js', './manifest.webmanifest', './parking-192.png', './parking-512.png'];
+const CACHE_NAME = CACHE_PREFIX + 'v2';
+const FILES = ['./', './parking.js?v=2', './manifest.webmanifest', './parking-192.png', './parking-512.png'];
 const START_URL = new URL('./', self.location).href;
 const STATIC_URLS = new Set(FILES.slice(1).map(file => new URL(file, self.location).href));
 
