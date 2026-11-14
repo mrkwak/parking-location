@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111b29">
+  <meta name="description" content="층수 버튼을 눌러 마지막 주차 위치를 기록하세요.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./parking-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="./parking-192.png">
+  <title>내 주차 위치</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, "Noto Sans KR", sans-serif;
+      background: #111b29;
+      color: #f4f7fb;
+      --surface: #1a2738;
+      --border: #3f5169;
+      --muted: #b7c5d7;
+      --mint: #bdf6d8;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: radial-gradient(ellipse 34rem 27rem at 70% -6rem, #263e4b, transparent), #111b29;
+    }
+    main {
+      width: min(100%, 31rem);
+      margin: auto;
+      padding: max(1.75rem, env(safe-area-inset-top)) 1.15rem max(1.5rem, env(safe-area-inset-bottom));
+    }
+    header { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.5rem; }
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 2.55rem;
+      height: 2.55rem;
+      border-radius: .75rem;
+      background: var(--mint);
+      color: #112820;
+      font-size: 1.5rem;
+      font-weight: 850;
+    }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: 1.55rem; letter-spacing: -.055em; }
+    h2 { font-size: 1rem; letter-spacing: -.03em; }
+    .record {
+      border: 1px solid var(--border);
+      border-radius: 1.2rem;
+      padding: 1.1rem;
+      background: var(--surface);
+    }
+    .record-head, .location-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: .25rem .75rem;
+    }
+    .record time, .location-row, .hint, details { color: var(--muted); font-size: .85rem; }
+    .record time { font-variant-numeric: tabular-nums; }
+    #record-floor {
+      margin: .6rem 0 .7rem;
+      font-size: 3.2rem;
+      line-height: 1.1;
+      font-weight: 850;
+      letter-spacing: -.075em;
+      color: var(--mint);
+    }
+    #record-floor.empty { font-size: 1.2rem; letter-spacing: -.03em; margin: .85rem 0 .2rem; }
+    .location-row { min-height: 2.75rem; border-top: 1px solid var(--border); align-items: center; }
+    .record-link, .text-button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+      color: var(--mint);
+      font: inherit;
+      font-weight: 700;
+    }
+    .text-button { border: 0; background: transparent; padding: 0; }
+    .floor-section { margin-top: 1.5rem; }
+    .hint { line-height: 1.45; margin-top: .35rem; }
+    .floors {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: .55rem;
+      margin: .35rem 0 .65rem;
+    }
+    .basement-floors { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .floor-group-title { margin: .8rem 0 0; color: var(--muted); font-size: .85rem; }
+    button, .record-link, summary { cursor: pointer; }
+    button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible {
+      outline: 2px solid var(--mint);
+      outline-offset: 3px;
+    }
+    .floor-button, .save-custom {
+      min-height: 3.35rem;
+      border: 1px solid var(--border);
+      border-radius: .78rem;
+      color: #f4f7fb;
+      background: var(--surface);
+      font: inherit;
+      font-weight: 800;
+      font-size: 1.13rem;
+    }
+    .floor-button[aria-pressed="true"], .save-custom {
+      border-color: var(--mint);
+      background: var(--mint);
+      color: #112820;
+    }
+    .floor-button:active, .save-custom:active { transform: translateY(1px); }
+    summary { min-height: 2.75rem; line-height: 2.75rem; }
+    form { display: flex; gap: .55rem; margin: .1rem 0 .75rem; }
+    input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: .7rem;
+      padding: .65rem .75rem;
+      font: inherit;
+      font-size: 1rem;
+    }
+    .save-custom { min-width: 4rem; padding: .55rem; font-size: .95rem; }
+    #notice { margin-top: .55rem; font-size: .87rem; color: #ffd2ad; line-height: 1.5; }
+    #notice:empty { margin: 0; }
+    #legacy { margin-top: .65rem; border-top: 1px solid var(--border); }
+    #legacy-photo { width: 100%; max-height: 45dvh; object-fit: contain; border-radius: .75rem; }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    @media (min-width: 640px) { main { padding-top: 2.75rem; } }
+  </style>
+  <script src="./parking.js" defer></script>
+</head>
+<body>
+  <main>
+    <header>
+      <span class="mark" aria-hidden="true">P</span>
+      <h1>내 주차 위치</h1>
+    </header>
+
+    <section class="record" aria-labelledby="record-title">
+      <div class="record-head">
+        <h2 id="record-title">마지막 주차</h2>
+        <time id="record-time" hidden></time>
+      </div>
+      <p id="record-floor" class="empty" aria-live="polite">아직 기록이 없어요</p>
+      <div class="location-row" id="location-row" hidden>
+        <span id="location-status" role="status"></span>
+        <a class="record-link" id="map-link" target="_blank" rel="noopener noreferrer" hidden>지도에서 보기</a>
+        <button class="text-button" id="retry-location" type="button" hidden>GPS 다시 잡기</button>
+      </div>
+    </section>
+
+    <section class="floor-section" aria-labelledby="floor-title">
+      <h2 id="floor-title">몇 층에 주차했나요?</h2>
+      <p class="hint">층수를 누르면 마지막 주차 기록이 바뀌어요.</p>
+      <h3 class="floor-group-title" id="basement-label">지하</h3>
+      <div class="floors basement-floors" role="group" aria-labelledby="basement-label">
+        <button type="button" class="floor-button" data-floor="B4" aria-label="지하 4층" aria-pressed="false">B4</button>
+        <button type="button" class="floor-button" data-floor="B3" aria-label="지하 3층" aria-pressed="false">B3</button>
+        <button type="button" class="floor-button" data-floor="B2" aria-label="지하 2층" aria-pressed="false">B2</button>
+        <button type="button" class="floor-button" data-floor="B1" aria-label="지하 1층" aria-pressed="false">B1</button>
+      </div>
+      <h3 class="floor-group-title" id="aboveground-label">지상</h3>
+      <div class="floors" role="group" aria-labelledby="aboveground-label">
+        <button type="button" class="floor-button" data-floor="1F" aria-label="지상 1층" aria-pressed="false">1F</button>
+        <button type="button" class="floor-button" data-floor="2F" aria-label="지상 2층" aria-pressed="false">2F</button>
+        <button type="button" class="floor-button" data-floor="3F" aria-label="지상 3층" aria-pressed="false">3F</button>
+        <button type="button" class="floor-button" data-floor="4F" aria-label="지상 4층" aria-pressed="false">4F</button>
+        <button type="button" class="floor-button" data-floor="5F" aria-label="지상 5층" aria-pressed="false">5F</button>
+        <button type="button" class="floor-button" data-floor="6F" aria-label="지상 6층" aria-pressed="false">6F</button>
+      </div>
+      <details id="custom-floor">
+        <summary>다른 층 입력</summary>
+        <form id="custom-form">
+          <label class="sr-only" for="floor-input">층수</label>
+          <input id="floor-input" type="text" maxlength="16" placeholder="예: B5 또는 7F" required>
+          <button type="submit" class="save-custom">저장</button>
+        </form>
+      </details>
+      <p id="notice" role="alert"></p>
+    </section>
+
+    <details id="legacy" hidden>
+      <summary>이전에 저장한 주차 사진</summary>
+      <img id="legacy-photo" alt="이전에 저장한 주차 사진">
+    </details>
+  </main>
+</body>
+</html>
